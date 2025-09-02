@@ -16,14 +16,16 @@ import {IPositionManager} from "./interfaces/IPosition.sol";
 contract LPManager is ReentrancyGuard {
     using SafeERC20 for IERC20;
     
-    IERC20 public immutable liquidityToken;
+    IERC20 public immutable liquidityToken; //USDT
 
-    address positionTradeContract; //contract Traders will interact with to pay LPs their yields
+    address positionTradeContract; //same as the deployed PositionManager contract Traders will interact with, to pay LPs their yields
     
-    // Total token number deposited by LPs not real not price 
+    // Total worth of USDT deposited by LPs
     uint256 public totalShares;
     
     // Current  yield earned from traders 
+    //notice this is different from totalShares, as it isolates collateral and profits/losses from trading activities
+    //but is still part of the total pool i.e(totalShares + totalYield ) value LPs can withdraw from, and pay trader wins from and receive trader losses into
     uint256 public totalYields;
     
     // LP tracking struct
@@ -35,6 +37,7 @@ contract LPManager is ReentrancyGuard {
     
     //contract administrators
     mapping(address => bool) public isContractAdmin;
+    
     // Mapping of LP address to their info
     mapping(address => LiquidityProvider) public liquidityProviders;
     
