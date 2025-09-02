@@ -137,6 +137,7 @@ enum PositionType {
         PositionType positionType
     ) external nonReentrant {
         address trader = msg.sender;
+        require(TradeisActive == true, "Trading is Paused or Closed, wait till Trading is resumed by platform");
         require(!traderOpenPositionDetails[trader].positionActive, "Position already active for this user");
         require(leverageMultiplier <= maximumLeverage && leverageMultiplier > 0, "Invalid leverage");
         require(collateralAmount > openingFee, "Collateral amount must be greater than opening fee");
@@ -186,6 +187,7 @@ enum PositionType {
      */
     function closePosition() external nonReentrant {
         address trader = msg.sender;
+        require(TradeisActive == true, "Trading is Paused or Closed, wait till Trading is resumed by platform");
         require(traderOpenPositionDetails[trader].positionActive == true, "No active position to close");
         
         Position storage userPosition = traderOpenPositionDetails[trader];
