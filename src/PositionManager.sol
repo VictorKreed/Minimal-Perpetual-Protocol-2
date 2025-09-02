@@ -204,7 +204,7 @@ enum PositionType {
         require(AmountToWithdrawForTrader > 0, "Negative or Empty balnce, Trader has lost all collateral and profits");
 
         lpManager.approvePostionTradeContract();
-        IERC20(liquidityToken).safeTransferFrom(address(this), address(lpManager), uint256(AmountToWithdrawForTrader));
+        IERC20(liquidityToken).safeTransferFrom(address(this), address(lpManager), (uint256(AmountToWithdrawForTrader) - closingFee));
         lpManager.unApprovePostionTradeContract();
        
          traderOpenPositionDetails[trader].positionActive = false;
