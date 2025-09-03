@@ -87,7 +87,7 @@ contract LPManager is ReentrancyGuard {
             
         // Calculate new percentage for new or existing LP: 
         uint256 newTotalShares = totalShares + currentDepositAmount;
-        uint256 totalDepositBalance = currentDepositAmount + liquidityProviders[msg.sender].shares;
+        uint256 totalDepositBalance = currentDepositAmount + liquidityProviders[msg.sender].shares; //this line ensures already existing LPs incase depositng more, get their previous shares counted in the new ownership percentage calculation.
 
         return (totalDepositBalance * 10000) / newTotalShares;
     }

@@ -62,8 +62,8 @@ enum PositionType {
     * @dev Events for logging key actions
     */
     event DepositCreated(address indexed user, uint256 amount, uint256 depositedAt);
-    event PositionOpened(address indexed user, uint256 size, PositionType positionType, uint256 leverage);
-    event PositionClosed(address indexed user, int256 pnl, uint256 closingPrice);
+    event PositionOpened(address indexed user, uint256 collateralAmount, uint256 positionSize, PositionType positionType, uint256 leverage, uint256 currentETHprice);
+    event PositionClosed(address indexed user, uint256 collateralAmount, uint256 positionSize, int256 pnl, uint256 closingPrice);
     event PositionLiquidated(address indexed user, uint256 liquidationPrice, uint256 remainingCollateral);
 
     constructor(
@@ -175,7 +175,7 @@ enum PositionType {
 
         totalActivePositions += 1;
 
-        emit PositionOpened(msg.sender, positionSize, positionType, leverageMultiplier);
+        emit PositionOpened(msg.sender,collateralAmount, positionSize, positionType, leverageMultiplier, currentEthPrice);
     }
 
     /**
@@ -211,7 +211,7 @@ enum PositionType {
 
          withdraw(uint256(AmountToWithdrawForTrader));
          totalActivePositions -= 1;
-        emit PositionClosed(msg.sender, pnl, currentEthPrice);
+        emit PositionClosed(msg.sender, userPosition.collateralAmount , userPosition.positionsize , pnl , currentEthPrice); 
     }
 
     /**
@@ -263,28 +263,28 @@ enum PositionType {
      */
     function _calculatePnL(Position memory position, uint256 currentPrice) internal pure returns (int256) {
         uint256 openedPrice = position.nativeTokenCurrentPrice;
-        uint256 positionSize = position.positionsize;
+        uint256 leverage = position.leveragemultiplier;
 
         if (position.positionType == PositionType.LONG) {
             // Long position: profit when price goes up
             if (currentPrice > openedPrice) {
                 int256 priceGain = int256(currentPrice) - int256(openedPrice);
-                int256 traderprofit = ((int256(positionSize) * priceGain ) / int256(openedPrice));
+                int256 traderprofit = ((int256(leverage) * priceGain ) / int256(openedPrice));
                 return (traderprofit);
             } else {
                 int256 priceLoss = int256(currentPrice) - int256(openedPrice);
-                int256 traderLoss = ((int256(positionSize) * priceLoss ) / int256(openedPrice));
+                int256 traderLoss = ((int256(leverage) * priceLoss ) / int256(openedPrice));
                 return (traderLoss);
             }
         } else {
             // Short position: profit when price goes down
             if (currentPrice < openedPrice) {
                 uint256 priceGain = openedPrice - currentPrice;
-                uint256 profit = (positionSize * priceGain) / openedPrice;
+                uint256 profit = (leverage * priceGain) / openedPrice;
                 return int256(profit);
             } else {
                int256 priceLoss = int256(openedPrice) - int256(currentPrice);
-                int256 traderLoss = ((int256(positionSize) * priceLoss ) / int256(openedPrice));
+                int256 traderLoss = ((int256(leverage) * priceLoss ) / int256(openedPrice));
                 return (traderLoss);  
             }
         }
