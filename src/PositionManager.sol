@@ -138,15 +138,13 @@ enum PositionType {
     ) external nonReentrant {
         address trader = msg.sender;
         require(TradeisActive == true, "Trading is Paused or Closed, wait till Trading is resumed by platform");
-        require(!traderOpenPositionDetails[trader].positionActive, "Position already active for this user");
-        require(collateralAmount <= 2000 , "Max 2,000 USDT per position");
+        require(!traderOpenPositionDetails[trader].positionActive, "A Position is already active for this user");
+        require(collateralAmount <= getUserDeposit(trader), "Insufficient deposited balance, deposit more collateral");
+        require(collateralAmount <= 2000 , "Max 2,000 USDT collateral to open a position");
         require(leverageMultiplier <= maximumLeverage && leverageMultiplier > 0, "Invalid leverage multiplier");
         require(collateralAmount > openingFee, "Collateral amount must be greater than opening fee");
-
-        // Check user has enough collateral
-        collateralAmount = getUserDeposit(trader);
-        require(collateralAmount >= collateralAmount, "Insufficient collateral balance");
-       
+        require(collateralAmount <= getUserDeposit(trader), "Insufficient deposited balance, deposit more collateral");
+        
         IERC20(liquidityToken).safeTransfer(address(lpManager),  collateralAmount); 
 
          userDeposits[trader].amount -=  collateralAmount;
@@ -205,10 +203,11 @@ enum PositionType {
         lpManager.approvePostionTradeContract();
         IERC20(liquidityToken).safeTransferFrom(address(this), address(lpManager), (uint256(AmountToWithdrawForTrader) - closingFee));
         lpManager.unApprovePostionTradeContract();
-       totalDeposits += (uint256(AmountToWithdrawForTrader) - closingFee);
+        totalDeposits += (uint256(AmountToWithdrawForTrader) - closingFee);
          traderOpenPositionDetails[trader].positionActive = false;
 
          withdraw(uint256(AmountToWithdrawForTrader));
+        totalDeposits -= (uint256(AmountToWithdrawForTrader) - closingFee);
          totalActivePositions -= 1;
         emit PositionClosed(msg.sender, userPosition.collateralAmount , userPosition.positionsize , pnl , currentEthPrice); 
     }
