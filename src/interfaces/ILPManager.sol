@@ -2,19 +2,19 @@
 pragma solidity ^0.8.30;
 
 interface ILPManager {
-
     enum PositionType {
-    LONG,
-    SHORT
-}
-   struct Position {
+        LONG,
+        SHORT
+    }
+
+    struct Position {
         uint256 collateralAmount;
         uint256 leveragemultiplier;
         uint256 nativeTokenCurrentPrice; //ETH price at opening time
-        uint256 positionsize;  // collateral * leverage
+        uint256 positionsize; // collateral * leverage
         uint256 nativeTokenExposureAtOpening; //positionSize worth in ETH at opening
         address owner;
-        uint openedAt;
+        uint256 openedAt;
         PositionType positionType;
         bool positionActive;
     }
@@ -26,7 +26,7 @@ interface ILPManager {
     function getTotalShares() external view returns (uint256);
 
     function withdrawAll() external;
-    
+
     function setPostionTradeContract(address newTradeContract) external;
 
     function approvePostionTradeContract() external;

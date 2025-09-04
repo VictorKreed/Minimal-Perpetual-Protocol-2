@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
+
 import "./interfaces/AggregatorV3interface.sol";
 
 contract PriceOracle {
-    
     /**
      * Network: Eth mainnet
      * Aggregator: ETH/USD
@@ -11,18 +11,18 @@ contract PriceOracle {
      */
     address EthUsdFeed = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
-    function setFeed( address ethUsd) public virtual {
+    function setFeed(address ethUsd) public virtual {
         EthUsdFeed = ethUsd;
     }
 
     /**
      * Returns the latest answer.
      */
-    function getChainlinkDataFeedLatestAnswer() public view returns (int, uint) {
+    function getChainlinkDataFeedLatestAnswer() public view returns (int256, uint256) {
         AggregatorV3Interface dataFeed = AggregatorV3Interface(EthUsdFeed);
-            
-        ( ,int256 answer,, uint256 updatedAt,) = dataFeed.latestRoundData();
-        uint precision = dataFeed.decimals();
+
+        (, int256 answer,, uint256 updatedAt,) = dataFeed.latestRoundData();
+        uint256 precision = dataFeed.decimals();
         require(updatedAt >= block.timestamp - 30 minutes, "Price is outdated");
         require(answer > 0, "Invalid price");
         return (answer, precision);
