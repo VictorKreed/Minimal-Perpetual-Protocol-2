@@ -44,8 +44,4 @@ contract LPManagerTest is BaseTest {
         positionManager.openPosition(amount, leverageMultiplier, positionType);
         vm.stopPrank();
     }
-
-    function _depositAndOpenPosition(address trader, uint256 amount) internal {
-        _deposit(trader, amount);
-    }
 }
