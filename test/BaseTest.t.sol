@@ -24,7 +24,7 @@ abstract contract BaseTest is Test {
         uint256 fork = vm.createSelectFork("https://eth.merkle.io");
         vm.selectFork(fork);
         assertEq(block.chainid, 1, "Not On Mainnet Fork");
-        vm.startBroadcast(admin1);
+        vm.startPrank(admin1);
         usdt = address(new ERC20Mock());
         lpManager = new LPManager(usdt, admin1, admin2);
         oracle = new PriceOracle();
@@ -38,6 +38,6 @@ abstract contract BaseTest is Test {
         ERC20Mock(usdt).mint(lp2, 1_000_000e6);
         ERC20Mock(usdt).mint(trader1, 100_000e6);
         ERC20Mock(usdt).mint(trader2, 100_000e6);
-        vm.stopBroadcast();
+        vm.stopPrank();
     }
 }
