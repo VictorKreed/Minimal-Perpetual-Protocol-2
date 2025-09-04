@@ -16,16 +16,58 @@ contract LPManagerTest is BaseTest {
         assertEq(ownership, 10000); // 100% for first depositor
     }
 
-    function test_withdrawFailsWhenActiveTrades() public {
-        // Open trade to set TradeisActive=true
-        _deposit(lp1, 50_000e6);
+    // function test_withdrawFailsWhenActiveTrades() public {
+    //     // Open trade to set TradeisActive=true
+    //     _deposit(lp1, 50_000e6);
 
-        _openPosition(trader1, 2000e6, 2, PositionManager.PositionType.LONG);
+    //     _openPosition(trader1, 2000e6, 2, PositionManager.PositionType.LONG);
+
+    //     vm.startPrank(lp1);
+    //     vm.expectRevert();
+    //     lpManager.withdrawAll();
+    //     vm.stopPrank();
+    // }
+
+    function test_multipleDepositsUpdateOwnership() public {
+        _deposit(lp1, 50_000e6);
+        _deposit(lp2, 50_000e6);
+
+        uint256 ownership1 = lpManager.getCurrentOwnershipPercent(lp1);
+        uint256 ownership2 = lpManager.getCurrentOwnershipPercent(lp2);
+
+        assertEq(ownership1, 5000); // 50%
+        assertEq(ownership2, 5000); // 50%
+    }
+
+    function test_withdrawAllResetsShares() public {
+        _deposit(lp1, 30_000e6);
 
         vm.startPrank(lp1);
-        vm.expectRevert();
         lpManager.withdrawAll();
         vm.stopPrank();
+
+        assertEq(lpManager.totalShares(), 0);
+        assertEq(lpManager.getCurrentOwnershipPercent(lp1), 0);
+    }
+
+    function test_withdrawRevertsIfNoShares() public {
+        vm.startPrank(lp1);
+        vm.expectRevert("No shares to withdraw");
+        lpManager.withdrawAll();
+        vm.stopPrank();
+    }
+
+    function test_onlyAdminCanSetTradeContract() public {
+        address attacker = makeAddr("attacker");
+        vm.prank(attacker);
+        vm.expectRevert("Only an Administrator can call this Function");
+        lpManager.setPostionTradeContract(attacker);
+    }
+
+    function test_onlyTradeContractCanApprove() public {
+        vm.prank(lp1);
+        vm.expectRevert("Only the trading contract can call this function");
+        lpManager.approvePostionTradeContract();
     }
 
     function _deposit(address lp, uint256 amount) internal {

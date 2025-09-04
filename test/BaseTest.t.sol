@@ -21,7 +21,7 @@ contract BaseTest is Test {
     address public trader2 = makeAddr("trader2");
 
     function setUp() public virtual {
-        uint256 fork = vm.createSelectFork("https://eth.merkle.io");
+        uint256 fork = vm.createSelectFork("https://mainnet.gateway.tenderly.co");
         vm.selectFork(fork);
         assertEq(block.chainid, 1, "Not On Mainnet Fork");
         vm.startPrank(admin1);

@@ -4,20 +4,19 @@ pragma solidity ^0.8.30;
 import "./ILPManager.sol";
 
 interface IPositionManager {
-
-        enum PositionType {
-            LONG,
-            SHORT
-        }
+    enum PositionType {
+        LONG,
+        SHORT
+    }
 
     struct Position {
         uint256 collateralAmount;
         uint256 leveragemultiplier;
-        uint nativeTokenCurrentPrice; //ETH price at opening time
-        uint positionsize;  // collateral * leverage
+        uint256 nativeTokenCurrentPrice; //ETH price at opening time
+        uint256 positionsize; // collateral * leverage
         address owner;
-        uint openedAt;
-        uint leverage;
+        uint256 openedAt;
+        uint256 leverage;
         string positionType;
         bool postionActive;
     }
