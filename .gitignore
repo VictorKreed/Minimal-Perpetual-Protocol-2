@@ -1,2 +1,6 @@
 editFiles
 
+cache
+.vscode
+.wake/*
+out/
