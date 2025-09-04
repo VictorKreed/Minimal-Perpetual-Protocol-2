@@ -21,14 +21,9 @@ contract LPManager is ReentrancyGuard {
     address positionTradeContract; //same as the deployed PositionManager contract Traders will interact with, to pay LPs their yields
     
     // Total worth of USDT deposited by LPs
-    uint256 public totalShares;
+    uint256 public totalShares; //i.e Vault balance 
     
-    // Current  yield earned from traders 
-    //notice this is different from totalShares, as it isolates collateral and profits/losses from trading activities
-    //but is still part of the total pool i.e(totalShares + totalYield ) value LPs can withdraw from, and pay trader wins from and receive trader losses into
-    uint256 public totalYields;
-    
-    // LP tracking struct
+    // LP info tracker
     struct LiquidityProvider {
         uint256 shares;           // Number of shares(individual tokens) owned
         uint256 ownershipPercent; // Percentage of pool owned (stored as basis points: 10000 = 100% for better precision)
@@ -56,7 +51,9 @@ contract LPManager is ReentrancyGuard {
      * Emits Deposit event
      */
     function deposit(uint256 amount) external nonReentrant {
-        require(amount >= 10000, "At least 10,000 USDT is required to be a Liquidity Provider");
+        bool isTradeActive = IPositionManager(positionTradeContract).TradeStatus();
+        require(  isTradeActive == false , "Protocol permits No LP deposits while Trades are deemed active");
+        require(amount >= 10_000, "At least 10,000 USDT is required to be a Liquidity Provider");
         
         // Transfer tokens from LP to contract 
         liquidityToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -82,14 +79,14 @@ contract LPManager is ReentrancyGuard {
      */
     function _calculateOwnershipPercent(uint256 currentDepositAmount) internal view returns (uint256) {
         if (totalShares == 0) {  
-            return 10000; // 10,000 basis points = 100% for first depositor
+            return 10_000; // 10,000 basis points = 100% for first depositor
         }
             
         // Calculate new percentage for new or existing LP: 
         uint256 newTotalShares = totalShares + currentDepositAmount;
         uint256 totalDepositBalance = currentDepositAmount + liquidityProviders[msg.sender].shares; //this line ensures already existing LPs incase depositng more, get their previous shares counted in the new ownership percentage calculation.
 
-        return (totalDepositBalance * 10000) / newTotalShares;
+        return (totalDepositBalance * 10_000) / newTotalShares;
     }
     
     /**
@@ -100,8 +97,8 @@ contract LPManager is ReentrancyGuard {
      */
     function getCurrentOwnershipPercent(address lp) public view returns (uint256) {
         if (totalShares == 0) return 0;
-        // Fix: multiply first, then divide to avoid precision loss  
-        return (liquidityProviders[lp].shares * 10000) / totalShares;
+        //multiplication first, then divide to avoid precision loss  
+        return (liquidityProviders[lp].shares * 10_000) / totalShares;
     }
     
     /**
@@ -120,23 +117,16 @@ contract LPManager is ReentrancyGuard {
      */
     function withdrawAll() external nonReentrant {
         bool isTradeActive = IPositionManager(positionTradeContract).TradeStatus();
-
         require(  isTradeActive == false , "One or more Trade positions are still active");
         require(liquidityProviders[msg.sender].shares > 0, "No shares to withdraw");
         
-        // Calculate total pool value (shares + yields from trading)
-        uint256 totalPoolValue = totalShares + totalYields;
-        
         // Calculate LP's withdrawable amount based on their up-to-date percentage
         uint256 currentPercent = getCurrentOwnershipPercent(msg.sender);
-        uint256 withdrawableAmount = (currentPercent * totalPoolValue) / 10000;
-        
-        // Calculate LP's portion of yields to deduct
-        uint256 yieldsToDeduct = (currentPercent * totalYields) / 10000;
+
+        uint256 withdrawableAmount = (currentPercent * totalShares) / 10_000;
         
         // Update state before transfer
         totalShares -= liquidityProviders[msg.sender].shares;
-        totalYields -= yieldsToDeduct;
         
         // Reset LP position
         delete liquidityProviders[msg.sender];
@@ -147,16 +137,6 @@ contract LPManager is ReentrancyGuard {
         emit Withdraw(msg.sender, withdrawableAmount, currentPercent);
     }
     
-    /**
-     * @dev Function to update total yields (called by trading contract when trades settle)
-     * This is where trader collateral Amount, position opening and close Fee, Profit and Loss affects the LP pool
-     */
-    function updateYields(uint256 amount) external {
-     require(msg.sender == positionTradeContract, "Only the trading contract can call this function");
-        totalYields += amount;
-        
-        emit YieldsUpdated(amount, totalYields);
-    } 
 
 /*
     Administrative functions to manage trading contract address and approvals
@@ -188,5 +168,4 @@ contract LPManager is ReentrancyGuard {
     
     event Deposit(address indexed lp, uint256 amount, uint256 ownershipPercent);
     event Withdraw(address indexed lp, uint256 amount, uint256 ownershipPercent);
-    event YieldsUpdated(uint256 profits, uint256 newTotalYields);
 }

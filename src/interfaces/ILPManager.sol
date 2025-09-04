@@ -26,8 +26,6 @@ interface ILPManager {
     function getTotalShares() external view returns (uint256);
 
     function withdrawAll() external;
-
-    function updateYields(uint256 profits) external;
     
     function setPostionTradeContract(address newTradeContract) external;
 

@@ -32,9 +32,9 @@ interface IPositionManager {
 
     function isLiquidationValid(address user) external view returns (bool);
 
-    function setMaximumLeverage(uint256 _maxLeverage) external;
+    function resetMaximumLeverage(uint256 _maxLeverage) external;
 
-    function setLiquidationThreshold(uint256 _threshold) external;
+    function resetLiquidationThreshold(uint256 _threshold) external;
 
     function TradeStatus() external view returns (bool);
 
