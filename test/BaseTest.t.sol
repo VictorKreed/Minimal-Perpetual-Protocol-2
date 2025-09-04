@@ -8,7 +8,7 @@ import {PositionManager} from "src/PositionManager.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {console2} from "forge-std/console2.sol";
 
-abstract contract BaseTest is Test {
+contract BaseTest is Test {
     LPManager public lpManager;
     PriceOracle public oracle;
     PositionManager public positionManager;
@@ -39,5 +39,18 @@ abstract contract BaseTest is Test {
         ERC20Mock(usdt).mint(trader1, 100_000e6);
         ERC20Mock(usdt).mint(trader2, 100_000e6);
         vm.stopPrank();
+
+        // Approvals
+        vm.prank(lp1);
+        ERC20Mock(usdt).approve(address(lpManager), type(uint256).max);
+
+        vm.prank(lp2);
+        ERC20Mock(usdt).approve(address(lpManager), type(uint256).max);
+
+        vm.prank(trader1);
+        ERC20Mock(usdt).approve(address(positionManager), type(uint256).max);
+
+        vm.prank(trader2);
+        ERC20Mock(usdt).approve(address(positionManager), type(uint256).max);
     }
 }
