@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+ // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.30;
 
@@ -340,7 +340,7 @@ if (position.positionType == PositionType.LONG) {
      */
     function resetLiquidationThreshold(uint256 _threshold) external {
         require(isAdmin[msg.sender] == true, "Only Admin");
-        require(_threshold <= 95, "Threshold still high");
+        require(_threshold >= 80  && _threshold < 95, "Threshold must be between 80 and 95");
         liquidationThreshold = _threshold;
     }
 
