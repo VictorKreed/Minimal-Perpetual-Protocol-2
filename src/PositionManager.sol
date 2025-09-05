@@ -208,6 +208,18 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
         int256 pnl = _calculatePnL(userPosition, currentEthPrice);
 
         int256 AmountToWithdrawForTrader = int256(userPosition.collateralAmount) + pnl;
+        if( AmountToWithdrawForTrader > int256(userPosition.collateralAmount) ) {
+            //if trader made a profit, ensure profit is capped to available liquidity in contract before allowing withdrawal
+            require(uint256(AmountToWithdrawForTrader) <= (totalDeposits + lpManager.getVaultBalance()), "Insufficient liquidity in contract to pay out profits at this time, try again later");
+        }
+
+        if( AmountToWithdrawForTrader <= 0 ){
+             // Clean up position and help close it out if trader has lost all collateral and profits
+        traderOpenPositionDetails[trader].positionActive = false;
+        totalActivePositions -= 1;
+        delete  traderOpenPositionDetails[trader];
+        }
+
         require(AmountToWithdrawForTrader > 0, "Negative or Empty balnce, Trader has lost all collateral and profits");
 
         lpManager.approvePostionTradeContract();
@@ -252,8 +264,8 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
 
         // Calculate remaining collateral after loss
         int256 totalLoss = pnl;
-        int256 remainingCollateral = totalLoss < int256(userPosition.collateralAmount)
-            ? int256(userPosition.collateralAmount) - totalLoss
+        int256 remainingPositionWorth = totalLoss < int256(userPosition.collateralAmount)
+            ? int256(userPosition.collateralAmount) + (totalLoss) //totalLoss is negative, therefore: (+) + (-) == (-) , so, it will be subtracted from collateral to get the right negative value
             : int8(0);
 
         // Clean up position
@@ -261,7 +273,7 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
         totalActivePositions -= 1;
         delete  traderOpenPositionDetails[user];
 
-        emit PositionLiquidated(user, currentEthPrice, remainingCollateral);
+        emit PositionLiquidated(user, currentEthPrice, remainingPositionWorth);
     }
 
     /**

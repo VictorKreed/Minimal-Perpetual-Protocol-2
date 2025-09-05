@@ -22,7 +22,8 @@ contract LPManager is ReentrancyGuard {
     address positionTradeContract; //same as the deployed PositionManager contract Traders will interact with, to pay LPs their yields
 
     // Total worth of USDT deposited by LPs
-    uint256 public totalShares; //i.e Vault balance
+    uint256 public totalShares; //i.e All liquidity providers balances at deposit time, excluding yields from trading activities
+    uint256 public totalLPs; //total number of unique LPs
 
     // LP info tracker
     struct LiquidityProvider {
@@ -67,7 +68,8 @@ contract LPManager is ReentrancyGuard {
 
         // Update total shares
         totalShares += amount;
-
+        // If new LP, increment total LP count
+        totalLPs += 1;
         emit Deposit(msg.sender, amount, ownershipPercent);
     }
 
@@ -122,14 +124,15 @@ contract LPManager is ReentrancyGuard {
 
         // Calculate LP's withdrawable amount based on their up-to-date percentage
         uint256 currentPercent = getCurrentOwnershipPercent(msg.sender);
-
-        uint256 withdrawableAmount = (currentPercent * totalShares) / 10_000;
+        uint256 withdrawableAmount = (currentPercent * getVaultBalance() ) / 10_000;
 
         // Update state before transfer
-        totalShares -= liquidityProviders[msg.sender].shares;
+        totalShares -= liquidityProviders[msg.sender].shares; 
 
         // Reset LP position
         delete liquidityProviders[msg.sender];
+
+        totalLPs -= 1; // Decrement total LP count
 
         // Transfer tokens back to LP
         liquidityToken.safeTransfer(msg.sender, withdrawableAmount);
@@ -162,6 +165,17 @@ contract LPManager is ReentrancyGuard {
     function unApprovePostionTradeContract() public {
         require(msg.sender == positionTradeContract, "Only the trading contract can call this function");
         IERC20(liquidityToken).approve(positionTradeContract, 0);
+    }
+
+
+
+    /**
+     * @dev View function to get total yields earned from trading activities plus LP balances.
+     * @notice LPs might be in profits or impermanent losses depending on trading outcomes
+     * @return Total balance in USDT
+     */
+  function getVaultBalance() public view returns (uint256) {
+        return liquidityToken.balanceOf(address(this));
     }
 
     event Deposit(address indexed lp, uint256 amount, uint256 ownershipPercent);

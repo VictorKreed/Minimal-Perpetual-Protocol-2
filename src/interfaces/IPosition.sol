@@ -38,4 +38,5 @@ interface IPositionManager {
     function TradeStatus() external view returns (bool);
 
     function closeTradeStatus() external;
+
 }
