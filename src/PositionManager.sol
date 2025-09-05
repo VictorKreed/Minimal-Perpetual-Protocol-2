@@ -146,8 +146,9 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
         address trader = msg.sender;
         require(TradeisActive == true, "Trading is Paused or Closed, wait till Trading is resumed by platform");
         require(!traderOpenPositionDetails[trader].positionActive, "A Position is already active for this user");
+        require(positionType == PositionType.LONG || positionType == PositionType.SHORT, "Invalid position type");
         require(collateralAmount <= getUserDeposit(trader), "Insufficient deposited balance, deposit more collateral");
-        require(collateralAmount <= 2000, "Max 2,000 USDT collateral to open a position");
+        require(collateralAmount > 3 && collateralAmount <= 2000, "Minimum Collateral must at least 3 and Max 2,000 USDT collateral to open a position");
         require(leverageMultiplier <= maximumLeverage && leverageMultiplier > 0, "Invalid leverage multiplier");
         require(collateralAmount > openingFee, "Collateral amount must be greater than opening fee");
         require(collateralAmount <= getUserDeposit(trader), "Insufficient deposited balance, deposit more collateral");
