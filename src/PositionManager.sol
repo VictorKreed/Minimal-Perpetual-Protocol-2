@@ -124,14 +124,10 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
     function withdraw(uint256 _amount) public {
         address trader = msg.sender;
         Deposit storage userdeposits = userDeposits[msg.sender];
-        require(
-            traderOpenPositionDetails[msg.sender].positionActive == false, "User must close position before withdrawing"
-        );
         require(userdeposits.amount >= _amount, "Insufficient deposit balnce");
         totalDeposits -= _amount;
         userdeposits.amount -= _amount;
         IERC20(liquidityToken).safeTransfer(trader, _amount);
-        delete traderOpenPositionDetails[trader];
     }
 
     /**
@@ -225,16 +221,15 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
 
         require(AmountToWithdrawForTrader > 0, "Negative or Empty balnce, Trader has lost all collateral and profits");
 
+        uint256 withdrawAmountForTrader = uint256(AmountToWithdrawForTrader) - closingFee;
         lpManager.approvePostionTradeContract();
         IERC20(liquidityToken).safeTransferFrom(
-            address(this), address(lpManager), (uint256(AmountToWithdrawForTrader) - closingFee)
-        );
+            address(this), address(lpManager), withdrawAmountForTrader);
         lpManager.unApprovePostionTradeContract();
-        totalDeposits += (uint256(AmountToWithdrawForTrader) - closingFee);
+         userDeposits[trader].amount += withdrawAmountForTrader; //add back to trader's deposit balance
+        totalDeposits += (withdrawAmountForTrader); //add back to total deposits before subtracting closing fee below
         traderOpenPositionDetails[trader].positionActive = false;
-
-        withdraw(uint256(AmountToWithdrawForTrader));
-        totalDeposits -= (uint256(AmountToWithdrawForTrader) - closingFee);
+        delete  traderOpenPositionDetails[trader];
         totalActivePositions -= 1;
         emit PositionClosed(msg.sender, userPosition.collateralAmount, userPosition.positionsize, pnl, currentEthPrice);
     }
