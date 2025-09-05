@@ -11,6 +11,8 @@ import "./PriceOracle.sol";
 contract PositionManager is PriceOracle, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+   uint256 public TradeOpenTime;
+
     uint256 public totalActivePositions; // Track total active positions, used to restrict LP withdrawals during active trades
     mapping(address => Position) public traderOpenPositionDetails; // Store user positions
 
@@ -208,16 +210,17 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
         int256 pnl = _calculatePnL(userPosition, currentEthPrice);
 
         int256 AmountToWithdrawForTrader = int256(userPosition.collateralAmount) + pnl;
-        if( AmountToWithdrawForTrader > int256(userPosition.collateralAmount) ) {
-            //if trader made a profit, ensure profit is capped to available liquidity in contract before allowing withdrawal
-            require(uint256(AmountToWithdrawForTrader) <= (totalDeposits + lpManager.getVaultBalance()), "Insufficient liquidity in contract to pay out profits at this time, try again later");
-        }
 
         if( AmountToWithdrawForTrader <= 0 ){
              // Clean up position and help close it out if trader has lost all collateral and profits
         traderOpenPositionDetails[trader].positionActive = false;
         totalActivePositions -= 1;
         delete  traderOpenPositionDetails[trader];
+        }
+
+        if( AmountToWithdrawForTrader > int256(userPosition.collateralAmount) ) {
+            //if trader made a profit, ensure profit is capped to available liquidity in contract before allowing withdrawal
+            require(uint256(AmountToWithdrawForTrader) <= (totalDeposits + lpManager.getVaultBalance()), "Insufficient liquidity in contract to pay out profits at this time, try again later");
         }
 
         require(AmountToWithdrawForTrader > 0, "Negative or Empty balnce, Trader has lost all collateral and profits");
@@ -386,6 +389,7 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
      */
     function openTradeStatus() public {
         require(isAdmin[msg.sender] == true, "Only Admin");
+        TradeOpenTime = block.timestamp;
         TradeisActive = true;
     }
     /**
@@ -395,7 +399,10 @@ contract PositionManager is PriceOracle, ReentrancyGuard {
 
     function closeTradeStatus() public {
         require(isAdmin[msg.sender] == true, "Only Admin");
-        require(totalActivePositions == 0, "One or more trades are still ongoing");
+        require(block.timestamp >= TradeOpenTime + 7_776_000, "Trade must be open for at least 1 hour before closing");
+        if(totalActivePositions != 0){
+            totalActivePositions = 0; //reset to 0 if any active positions, to allow closing of trade
+        }
         TradeisActive = false;
     }
 }
